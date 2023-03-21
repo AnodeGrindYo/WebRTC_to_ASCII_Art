@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Webcam ASCII Art - go into the matrix</title>
+    <style>
+        pre {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 10px;
+            line-height: 8px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            background-color: black;
+        }
+        
+        #ascii-art {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* height: 100%; */
+            /* font-size: 1.5vw; */
+            white-space: pre;
+            color: #ff0266;
+        }
+        
+    </style>
+</head>
+<body>
+    <pre id="ascii-art"></pre>
+    <script>
+        // Accès à la webcam et affichage de l'ASCII art
+        const asciiArt = document.getElementById('ascii-art');
+        
+        navigator.mediaDevices.getUserMedia({ video: true })
+        .then((stream) => {
+            const video = document.createElement('video');
+            video.srcObject = stream;
+            video.play();
+            
+            const asciiProcessor = new AsciiProcessor();
+            asciiProcessor.processVideo(video, asciiArt);
+        });
+        
+        
+        class AsciiProcessor {
+            constructor() {
+                // Liste des caractères ASCII à utiliser pour l'affichage
+                this.asciiChars = ['@', '#', 'S', '%', '?', '*', '+', ';', ':', ',', '.'];
+                // Largeur et hauteur de l'image en pixels pour le traitement ASCII
+                this.width = 160;
+                this.height = 120;
+            }
+            
+            processVideo(video, asciiArt) {
+                // Création d'un canvas pour le traitement de l'image
+                const canvas = document.createElement('canvas');
+                canvas.width = this.width;
+                canvas.height = this.height;
+                const context = canvas.getContext('2d');
+                
+                // Boucle de traitement de l'image en temps réel
+                const processFrame = () => {
+                    context.drawImage(video, 0, 0, this.width, this.height);
+                    const imageData = context.getImageData(0, 0, this.width, this.height);
+                    const asciiData = this.imageDataToAscii(imageData);
+                    asciiArt.textContent = asciiData;
+                    requestAnimationFrame(processFrame);
+                };
+                requestAnimationFrame(processFrame);
+            }
+            
+            
+
+                imageDataToAscii(imageData) {
+                    let asciiData = '';
+                    for (let i = 0; i < imageData.data.length; i += 4) {
+                        const r = imageData.data[i];
+                        const g = imageData.data[i + 1];
+                        const b = imageData.data[i + 2];
+                        const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                        const asciiCharIndex = Math.floor((this.asciiChars.length - 1) * (255 - luminance) / 255);
+                        const asciiChar = this.asciiChars[asciiCharIndex];
+                        asciiData += asciiChar;
+                        if ((i / 4 + 1) % this.width === 0) {
+                            asciiData += '\n';
+                        }
+                    }
+                    return asciiData;
+                }
+            }
+
+        </script>
+    </body>
+    </html>
+    
